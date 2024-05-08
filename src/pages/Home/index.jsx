@@ -5,7 +5,12 @@ import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { InputMask } from 'primereact/inputmask';
 import { Dropdown } from 'primereact/dropdown';
-import { useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useBuscarCidades, useBuscarEstados } from "../../hooks/IBGEHooks";
+import { useForm } from "react-hook-form";
+import { api } from "../../services/api";
+import { Toast } from 'primereact/toast';
+import { ProgressSpinner } from 'primereact/progressspinner';
         
               
 const HomeContainer = styled.section `
@@ -51,46 +56,98 @@ const HomeContainer = styled.section `
 
 const Home = () => {
 
-    const [genero, setGenero] = useState();
-    const [estado, setEstado] = useState();
-    const [cidade, setCidade] = useState();
+    const {
+        register,
+        handleSubmit,
+        watch,
+        formState: { errors },
+      } = useForm()
+
+    const toast = useRef(null);
+
+    const showSuccess = () => {
+        toast.current.show({severity:'success', summary: 'Sucesso', detail:'Sua visita foi registrada', life: 3000});
+    }
+    const showError = () => {
+        toast.current.show({severity:'error', summary: 'Error', detail:'Tivemos um erro', life: 3000});
+    }
+    
+      
+      const [genero, setGenero] = useState();
+      const [estado, setEstado] = useState();
+      const [cidade, setCidade] = useState();
+      
+      const onSubmit = async (data) => {
+        // criar use state para loading...
+        console.log(data);
+
+        let request = {
+            name: data.name,
+            cpf: data.cpf,
+            occupation: data.occupation,
+            age: data.age,
+            city: cidade,
+            state: estado,
+            gender: genero
+        }
+
+        await api.post('/visitor', request).then((response) =>{
+            console.log(response.data);
+            // toast
+            showSuccess();
+        }).catch((error) => {
+            console.log(error);
+            //toast
+            showError();
+        }).finally(() => {
+            //set loading false
+        })
+      }
 
     const generos = [
         {
           label: 'Masculino',
-          value: 0
+          value: 'Homem'
         },
         {
           label: 'Feminino',
-          value: 1
+          value: 'Mulher'
         },
         {
           label: 'Outros',
-          value: 2
+          value: 'Outro'
         },
         {
           label: 'Prefiro nao informar',
           value: 3
         },
     ]
+
+    const {data: estados} = useBuscarEstados();
+    const {data: cidades, refetch: cidadesRefetch} = useBuscarCidades(estado);
     
+    useEffect(() =>{
+        cidadesRefetch();
+    },[estado, cidadesRefetch]);
+
     return (
         <HomeContainer>
-            <form>
-                <h3>Seja bem-vindo(a) visitante</h3>
+            <Toast ref={toast} />
+            <form onSubmit={handleSubmit(onSubmit)}>
+                <h2>Seja bem-vindo(a) visitante</h2>
                 <label htmlFor="nome">Nome</label>
-                <InputText
+                <InputText {...register('name')}
                     id="nome"
                     placeholder="Digite seu nome"
                 />
                 <label htmlFor="cpf">CPF</label>
-                <InputMask
+                <InputMask {...register('cpf')}
                    id="cpf"
                    placeholder="000.000.000.00"
                    mask="999.999.999-99" 
                 />
                 <label htmlFor="profissao">Profissão</label>
-                <InputText
+                <InputText {...register('occupation')}
                     id="profissao"
                     placeholder="Digite sua Profissão"
                 />
@@ -110,7 +167,7 @@ const Home = () => {
                     </div>
                     <div className="lado">
                         <label htmlFor="idade">Idade</label>
-                            <InputText
+                            <InputText {...register('age')}
                               id="idade"
                               type="number"
                             />
@@ -124,9 +181,9 @@ const Home = () => {
                           placeholder="Escolha um estado"
                           value={estado}
                           onChange={(e)=> setEstado(e.target.value)}
-                          options={[]}
-                          optionLabel=""
-                          optionValue=""
+                          options={estados}
+                          optionLabel="nome"
+                          optionValue="sigla"
                         />
                     </div>
                     <div className="lado">
@@ -136,9 +193,9 @@ const Home = () => {
                           placeholder="Escolha uma cidade"
                           value={cidade}
                           onChange={(e)=> setCidade(e.target.value)}
-                          options={[]}
-                          optionLabel=""
-                          optionValue=""
+                          options={cidades}
+                          optionLabel="nome"
+                          optionValue="nome"
                         />
                     </div>
                 </div>
