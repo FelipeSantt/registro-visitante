@@ -58,6 +58,7 @@ const Home = () => {
 
     const {
         register,
+        reset,
         handleSubmit,
         watch,
         formState: { errors },
@@ -66,10 +67,10 @@ const Home = () => {
     const toast = useRef(null);
 
     const showSuccess = () => {
-        toast.current.show({severity:'success', summary: 'Sucesso', detail:'Sua visita foi registrada', life: 3000});
+        toast.current.show({severity:'success', summary: 'Sucesso', detail:'Cadastro Concluido, aproveite sua Visita!', life: 2500});
     }
     const showError = () => {
-        toast.current.show({severity:'error', summary: 'Error', detail:'Tivemos um erro', life: 3000});
+        toast.current.show({severity:'error', summary: 'Error', detail:'Tivemos um erro', life: 2500});
     }
     
       
@@ -93,16 +94,15 @@ const Home = () => {
 
         await api.post('/visitor', request).then((response) =>{
             console.log(response.data);
-            // toast
             showSuccess();
         }).catch((error) => {
             console.log(error);
-            //toast
             showError();
         }).finally(() => {
             //set loading false
+            reset();
         })
-      }
+      };
 
     const generos = [
         {
